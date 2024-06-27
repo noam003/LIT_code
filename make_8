@@ -1,0 +1,26 @@
+def make_8(folder_path):
+  # This is just to do NO NOISE and downsample to 8khz
+  for file_name in os.listdir(folder_path):
+    if file_name.endswith('.wav'):
+        full_file_name = os.path.join(folder_path, file_name)
+        print("Processing:")
+        print(file_name)
+        audio1_name = full_file_name
+        y, sr = librosa.load(audio1_name)
+        energy_per_duration2, energy_per_sample2 = calculate_energy(audio1_name)
+        ratio = math.sqrt(90.03581759295885/energy_per_duration2)
+        y = y*ratio
+        sf.write('newaudio.wav', y, sr)
+        audio1 = AudioSegment.from_file("newaudio.wav")##clean file
+        one_sec = AudioSegment.silent(duration=1000)
+
+        audio1 = audio1 + one_sec
+
+        audio1.export(f"{file_name[:-4]}_no_noise.wav", format="wav")
+        y, sr = librosa.load(f"{file_name[:-4]}_no_noise.wav", sr=8000)
+        write(f"{file_name[:-4]}_no_noise.wav", sr,y)
+
+        input_file = f"{file_name[:-4]}_no_noise.wav"
+        output_file = f"{file_name[:-4]}_no_noise.wav"
+        audio = AudioSegment.from_file(input_file)
+        audio.export(output_file, format="wav", parameters=["-acodec", "pcm_s16le"])
