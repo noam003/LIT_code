@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import argparse
 import os
 import matplotlib.pyplot as plt
 
@@ -25,17 +26,18 @@ def graph(input_dir, filename, threshold):
 
     # Drop unwanted column
     # df = df.drop(columns=['1'])
-
+    
     war_mixed_list = []
     war_proc_list = []
 
-    for _, row in df.iterrows():
-        war_mixed_list.append(row['Mixed W.A.R. (%)'])
-        war_proc_list.append(row['Processed W.A.R. (%)'])
+    for index, row in df.iterrows():
+        if index < len(df) - 1:  # Skip appending the last row
+            war_mixed_list.append(row['Mixed W.A.R. (%)'])
+            war_proc_list.append(row['Processed W.A.R. (%)'])
 
-    print(len(war_mixed_list))
-    for key, value in zip(war_mixed_list, war_proc_list):
-        print(f"{key}: {value}")
+    # print(len(war_mixed_list))
+    # for key, value in zip(war_mixed_list, war_proc_list):
+    #     print(f"{key}: {value}")
 
     results = []
     expand_res = []
@@ -49,13 +51,57 @@ def graph(input_dir, filename, threshold):
 
     return results, expand_res
 
+def read_excel_without_last_row(file_path):
+    df = pd.read_excel(file_path)
+    return df.iloc[:-1]  # Exclude the last row
+
 def main():
     """
-    Main function to generate a single stacked bar graph showing 
-    the percentage of processed W.A.R. values for different thresholds.
+    Perform data processing on Excel files located in a specified directory (`input_dir`),
+    generate a stacked bar graph showing the percentage of processed W.A.R. values for 
+    different thresholds, and save an intermediate concatenated Excel file.
+
+    Steps:
+    1. Parses command-line arguments to get the directory (`input_dir`) containing Excel files.
+    2. Reads each Excel file, excluding the last row, and concatenates them into a single DataFrame.
+    3. Computes the percentage of processed W.A.R. values >= specified thresholds (90%, 80%, 70%).
+    4. Generates a stacked bar graph using `matplotlib`, where each bar represents a threshold.
+       The height of each bar corresponds to the percentage of values meeting or exceeding the threshold.
+       Text annotations on each bar show the count of values meeting the threshold and the total count.
+    5. Saves the concatenated DataFrame as `concatenated_data.xlsx` in the `input_dir`.
+    6. Displays the graph using `plt.show()` and deletes the intermediate `concatenated_data.xlsx` file.
+
+    Command-line Usage:
+    python script_name.py /path/to/input_directory
+
+    Requirements:
+    - Requires `pandas`, `numpy`, and `matplotlib` Python libraries.
+    - Excel files in `input_dir` must have columns 'Mixed W.A.R. (%)' and 'Processed W.A.R. (%)'.
+    - Files starting with '~$' are skipped as temporary files.
+
+    Returns:
+    None
     """
-    input_dir = '/home/sbir/Downloads/benchmarking_script/processed_excel/'
-    filename = 'processed_3853-163249-0018_output.xlsx'
+    # Function code follows here
+    
+    parser = argparse.ArgumentParser(description='Process Excel files and generate a stacked bar graph.')
+    parser.add_argument('input_dir', type=str, help='Directory where input Excel files are located')
+    args = parser.parse_args()
+
+    input_dir = args.input_dir
+    # input_dir = '/Users/guzhaowen/Downloads/benchmarking_script/processed_excel/'
+    # filename = 'Book1.xlsx'
+    excel_files = [file for file in os.listdir(input_dir) if file.endswith('.xlsx') or file.endswith('.xls')]
+    dfs = []
+    for file in excel_files:
+        file_path = os.path.join(input_dir, file)
+        df = read_excel_without_last_row(file_path)
+        dfs.append(df)
+    
+    concatenated_df = pd.concat(dfs, axis=0, ignore_index=True)
+    output_file = input_dir+ 'concatenated_data.xlsx'
+    concatenated_df.to_excel(output_file, index=False)
+    
     thresholds = [90, 80, 70]
     colors = ['r', 'g', 'b']
 
@@ -66,7 +112,7 @@ def main():
     x_labels = ['90%', '80%', '70%', '60%', '50%', '40%', '30%', '20%', '10%']
 
     for i, threshold in enumerate(thresholds):
-        results, expand_res = graph(input_dir, filename, threshold)
+        results, expand_res = graph(input_dir, output_file, threshold)
         bars = ax.bar(x + i * width, results, width, label=f'WAR >= {threshold}%', color=colors[i])
         for bar, result in zip(bars, expand_res):
             count_ge_i, total_keys_i = result
@@ -82,6 +128,8 @@ def main():
 
     plt.tight_layout()
     plt.show()
+    
+    os.remove(output_file)
 
 if __name__ == "__main__":
     main()
