@@ -35,7 +35,8 @@ def graph(input_dir, filename, threshold):
             war_mixed_list.append(row['Mixed W.A.R. (%)'])
             war_proc_list.append(row['Processed W.A.R. (%)'])
 
-    
+    mixed_avg = np.average(war_mixed_list)
+    proc_avg = np.average(war_proc_list)
     # # print(len(war_mixed_list))
     # for key, value in zip(war_mixed_list, war_proc_list):
     #     print(f"{key}: {value}")
@@ -60,7 +61,7 @@ def graph(input_dir, filename, threshold):
         # print(results)
         expand_res.append((count_ge_threshold, len(keys_over_i)))
 
-    return results, expand_res
+    return results, expand_res,mixed_avg,proc_avg
 
 def read_excel_without_last_row(file_path):
     df = pd.read_excel(file_path)
@@ -122,23 +123,33 @@ def main():
     x = np.arange(10)  # the label locations
     x_labels = ['90%', '80%', '70%', '60%', '50%', '40%', '30%', '20%', '10%', '0%']
 
+    sum_of_red = 0
+    denom_of_90 = 0
+
     for i, threshold in enumerate(thresholds):
-        results, expand_res = graph(input_dir, output_file, threshold)
+        results, expand_res,mixed_avg,proc_avg = graph(input_dir, output_file, threshold)
+        denom_of_90 = expand_res[0][1]
         # print(results)
         bars = ax.bar(x + i * width, results, width, label=(f'WAR >= {threshold}%' if threshold !=-1 else "WAR < 70%"), color=colors[i])
         for bar, result in zip(bars, expand_res):
             count_ge_i, total_keys_i = result
             # print(total_keys_i)
             ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 1, f"{count_ge_i}/{total_keys_i}", ha='center', va='bottom')
+            if threshold == 90:
+                sum_of_red = sum_of_red+ count_ge_i
 
+
+    # print(result)
+    FOM = round(((sum_of_red/denom_of_90)-1)*100)
     ax.set_ylabel('Processed W.A.R. %')
     ax.set_xlabel('W.A.R. on Original')
     ax.set_title('Bar Graph of Processed WAR% >= Thresholds vs. Original WAR%')
     ax.set_xticks(x + width)
     ax.set_xticklabels(x_labels)
     ax.legend()
-    ax.set_ylim(0,140)
-
+    ax.set_ylim(0,120)
+    print(f"Sum of red is {sum_of_red},number of mixed WAR over 90% is {denom_of_90}, The Figure of Merit is {FOM}%")
+    print(f"The average of mixed WAR is {mixed_avg}, the average of processed WAR is {proc_avg}")
     plt.tight_layout()
     plt.show()
     
