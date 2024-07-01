@@ -43,7 +43,7 @@ def graph(input_dir, filename, threshold):
     results = []
     expand_res = []
 
-    for i in range(90, 9, -10):
+    for i in range(90, -1, -10):
         keys_over_i = [war_proc for war_mixed, war_proc in zip(war_mixed_list, war_proc_list) if (war_mixed >= i and war_mixed < (i+(11 if i==90 else 10))) ]
         if threshold !=-1:
             count_ge_threshold = np.sum(np.array(keys_over_i) >= threshold)
@@ -119,8 +119,8 @@ def main():
     fig, ax = plt.subplots(figsize=(10, 6))
 
     width = 0.2  # width of the bars
-    x = np.arange(9)  # the label locations
-    x_labels = ['90%', '80%', '70%', '60%', '50%', '40%', '30%', '20%', '10%']
+    x = np.arange(10)  # the label locations
+    x_labels = ['90%', '80%', '70%', '60%', '50%', '40%', '30%', '20%', '10%', '0%']
 
     for i, threshold in enumerate(thresholds):
         results, expand_res = graph(input_dir, output_file, threshold)
