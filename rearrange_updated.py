@@ -1,9 +1,23 @@
 import pandas as pd
-# from openpyxl import load_workbook
-# from openpyxl.styles import PatternFill
-# import numpy as np
 import os
-# from openpyxl import Workbook
+# This version of rearrange corrects the file naming bug and can take the average for different db levels
+def transform_file_name(file_name):
+    if isinstance(file_name, str) and file_name != "nan":
+        parts = file_name.split('_')
+        return '_'.join(parts[2:])
+    return file_name
+
+def db_count(transformed_names):
+    count = 0
+    db_set = set()
+    for file_name in transformed_names:
+        if isinstance(file_name, str) and file_name != "nan":
+            #print(file_name.split('_')[4])
+            db_level = file_name.split('_')[4]
+            db_set.add(db_level)
+    return len(db_set)
+    
+
 
 def edit_xlsx(input_dir,filename,output_dir):
     '''
@@ -32,30 +46,92 @@ def edit_xlsx(input_dir,filename,output_dir):
 
     results = []
     new_results=[]
-    names=[]
+    file_names=[]
     for _, row in df_sorted.iterrows():
         results.append(row['W.A.R. (%)'])
-        names.append(row['1'])
-
-    rows = int(len(df)/2)
+        file_names.append(row['1'])
+        
+    transformed_names = [transform_file_name(name) for name in file_names]
+    
+    db_levels = db_count(transformed_names)
+    #print(f'db levels: {db_levels}')
+    rows = len(df)//2
+    db_section_size = rows//db_levels
+    
+    print(f'db_section_size: {db_section_size}')
+    # for loop gets mixed and proc values by going through i+rows
+    
     for i in range(0,rows):
-        new_results.append([names[i][-34:],round(results[i]*100),round(results[i+rows]*100),round((results[rows+10]-results[rows])*100)])
+        file_name = transformed_names[i]
+        mixed_res = round(results[i] * 100)
+        proc_res = round(results[i + rows] * 100)
+        imp_res = proc_res - mixed_res
+        new_results.append([file_name,mixed_res,proc_res,imp_res])
 
+            
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
         
     output_file_path = output_dir+'processed_'+filename  # Path for the output file
 
     results_df = pd.DataFrame(new_results, columns=['File index', 'Mixed W.A.R. (%)', 'Processed W.A.R. (%)', 'Improvement'])
-    mixavg = results_df['Mixed W.A.R. (%)'].mean()
+    #mixavg = results_df['Mixed W.A.R. (%)'].mean()
     # results_df.loc['Mixed W.A.R. (%)'] = mixavg
-    procavg=results_df['Processed W.A.R. (%)'].mean()
+    #procavg=results_df['Processed W.A.R. (%)'].mean()
     # results_df.loc['Processed W.A.R. (%)'] = procavg
-    imp = results_df['Improvement'].mean()
+    #imp = results_df['Improvement'].mean()
     # results_df.loc['Improvement'] = imp
-    new_results.append(['Average',mixavg,procavg,imp])
-    results_df = pd.DataFrame(new_results, columns=['File index', 'Mixed W.A.R. (%)', 'Processed W.A.R. (%)', 'Improvement'])
-    results_df.to_excel(output_file_path, index=False)
+    
+    final_results = []
+
+    for i in range(db_levels):
+        start_index = i * db_section_size
+        end_index = (i + 1) * db_section_size if i != db_levels - 1 else len(results_df)
+        section = results_df.iloc[start_index:end_index]
+        
+        # Append the current section to final results
+        final_results.append(section)
+        
+        #if i < db_levels - 1:  # Add the new row except after the last section
+        avg_mixed = section['Mixed W.A.R. (%)'].mean()
+        avg_processed = section['Processed W.A.R. (%)'].mean()
+        avg_improvement = section['Improvement'].mean()
+        
+        avg_row = pd.DataFrame({
+            'File index': ['Average'],
+            'Mixed W.A.R. (%)': [avg_mixed],
+            'Processed W.A.R. (%)': [avg_processed],
+            'Improvement': [avg_improvement]
+        })
+        
+        # Append the average row to final results
+        final_results.append(avg_row)
+    
+    # Concatenate all sections and average rows into the final DataFrame
+    result_df = pd.concat(final_results).reset_index(drop=True)
+    
+    # Save the final DataFrame to Excel
+    result_df.to_excel(output_file_path, index=False)
+    print(f"Saved output to {output_file_path}")
+    
+    #mixavg = results_df['Mixed W.A.R. (%)'].mean(skipna=True)
+    #procavg = results_df['Processed W.A.R. (%)'].mean(skipna=True)
+    #impavg = results_df['Improvement'].mean(skipna=True)
+    
+
+    '''
+    for i in range(0, len(results_df), db_iters + 1):
+        if i < len(results_df) and results_df.iloc[i].isnull().all():
+            segment = results_df.iloc[i + 1:i + db_iters + 1]
+            avg_result_1 = segment['Mixed W.A.R. (%)'].mean(skipna=True)
+            avg_result_2 = segment['Processed W.A.R. (%)'].mean(skipna=True)
+            avg_difference = segment['Improvement'].mean(skipna=True)
+            results_df.iloc[i] = ["Average", avg_result_1, avg_result_2, avg_difference]
+    '''
+    #new_results.append(['Average',mixavg,procavg,imp])
+    
+    #results_df = pd.DataFrame(new_results, columns=['File index', 'Mixed W.A.R. (%)', 'Processed W.A.R. (%)', 'Improvement'])
+    
 
 def rearrange_multiple(input_dir, output_dir):
     """
@@ -101,6 +177,6 @@ def main():
     # edit_xlsx('/Users/guzhaowen/Downloads/benchmarking_script_2/excel/','422-122949-0014_output.xlsx','/Users/guzhaowen/Downloads/benchmarking_script_2/processed_excel/')
     rearrange_multiple('/Users/noamargolin/Desktop/benchmarking_script2/excel/',
     '/Users/noamargolin/Desktop/benchmarking_script2/processed_excel/')
-    summary('/Users/noamargolin/Desktop/benchmarking_script2/processed_excel/')
+    #summary('/Users/noamargolin/Desktop/benchmarking_script2/processed_excel/')
 if __name__ == "__main__":
     main()
