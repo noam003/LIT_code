@@ -113,12 +113,12 @@ def main():
                     sum_of_red += count_ge_i
 
         FOM = round(((sum_of_red / denom_of_90) - 1) * 100)
-        file_results['High Processed Tail'] = sum_of_red
-        file_results['High Mixed Tail'] = denom_of_90
-        file_results['Figure of Merit'] = FOM
-        file_results['Average Mixed WAR'] = mixed_avg
-        file_results['Average Processed WAR'] = proc_avg
-        file_results['Average Improvement'] = proc_avg - mixed_avg
+        file_results['TAR(P)'] = sum_of_red
+        file_results['TAR(M)'] = denom_of_90
+        file_results['TAR(D)'] = FOM
+        file_results['WAR(M)'] = mixed_avg
+        file_results['WAR(P)'] = proc_avg
+        file_results['WAR(D)'] = proc_avg - mixed_avg
 
         results_table.append(file_results)
 
@@ -137,10 +137,10 @@ def main():
     results_df.sort_values(by='filename', ascending=True, inplace=True)
 
     # Find the row with the closest Average Mixed WAR to 70%
-    closest_row_index = (results_df['Average Mixed WAR'] - 70).abs().idxmin()
+    closest_row_index = (results_df['WAR(M)'] - 70).abs().idxmin()
     # print(closest_row_index)
     # Reorder columns
-    results_df = results_df[['filename', 'Average Mixed WAR', 'Average Processed WAR', 'Average Improvement', 'High Mixed Tail', 'High Processed Tail', 'Figure of Merit']]
+    results_df = results_df[['filename', 'WAR(M)', 'WAR(P)', 'WAR(D)', 'TAR(M)', 'TAR(P)', 'TAR(D)']]
 
     # Save the DataFrame to an Excel file
     output_excel = os.path.join(input_dir, 'results_summary.xlsx')
