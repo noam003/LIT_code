@@ -1,11 +1,10 @@
-# LIT 🔥
+# Live Transcription ML/Python
 
-### Database Link:
+### Database Used:
 
 https://drive.google.com/drive/folders/1gCBO3R_wEdNUFyMtb7e7SX0SSdj9EzKw?usp=drive_link
-### Run NN with line 102 of Audio Noise Prediction.py
 
-### Run benchmark_script.py
+### Testing outcome with benchmark_script.py
 Using txt files and speech files from the Database,
 - Upload txt files into "txts" folder
 - Upload speech files into "test" folder
