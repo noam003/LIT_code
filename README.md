@@ -12,3 +12,9 @@ Using txt files and speech files from the Database,
   python tabulate_audiofiles.py -sd google test -t txts
 
 ### Run Rearrange.py for summary
+
+Yobe, 77 Franklin St, Boston, MA 02110
+Phone: (617) 848 8922
+Email: contact.us@yobeinc.com
+
+
